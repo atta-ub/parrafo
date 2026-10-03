@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Run parrafo from this checkout without installing it (uses shell.nix on NixOS).
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if command -v python3 >/dev/null && python3 -c 'import rich, typer, requests' 2>/dev/null; then
+  PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m parrafo "$@"
+fi
+args=""
+[ $# -gt 0 ] && args=$(printf '%q ' "$@")
+exec nix-shell "$here/shell.nix" --run "PYTHONPATH='$here' python3 -m parrafo $args"

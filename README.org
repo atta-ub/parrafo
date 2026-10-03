@@ -1,0 +1,85 @@
+#+TITLE: parrafo
+#+SUBTITLE: Learn Spanish one real paragraph at a time
+
+Every hour (or every 3h, 90m... you choose), =parrafo= shows a paragraph
+of real Spanish, then its published English translation.
+
+* Setup
+
+On NixOS no install is needed: =./parrafo-run= pulls Python and the libraries
+from =shell.nix=. Elsewhere: =pip install -e .= and use =parrafo=.
+
+#+begin_src sh
+./parrafo-run build      # one-time download (~20 MB) into ~/.local/share/parrafo/
+./parrafo-run            # show a paragraph now
+#+end_src
+
+* Commands
+
+| command                           | what it does                                         |
+|-----------------------------------+------------------------------------------------------|
+| =parrafo= / =parrafo next=        | new paragraph now                                    |
+| =parrafo next -t sports -t news=  | only from these topics                               |
+| =parrafo again=                   | reprint the last one                                 |
+| =parrafo due=                     | show one only if the interval has passed             |
+| =parrafo watch --every 3h=        | keep running, new paragraph every 3h                 |
+| =parrafo topics=                  | topics, counts, and how many you've read             |
+| =parrafo stats=                   | read today / this week / this month                  |
+| =parrafo config [--edit]=         | settings file                                        |
+| =parrafo build [-s gracian] [--refresh]= | (re)build the library                         |
+
+Options on =next=, =again=, =watch=: =--reveal enter|delay|instant=,
+=--order es-en|en-es= (en-es is a reverse challenge).
+
+* Settings: =~/.config/parrafo/config.toml=
+
+#+begin_src toml
+every = "1h"          # "3h", "90m", "1h30m" ...
+order = "es-en"
+reveal = "enter"      # enter | delay | instant
+reveal_delay = 30
+topics = []           # e.g. ["philosophy", "history", "travel"]; empty = all
+notify = false        # also send a desktop notification
+#+end_src
+
+* Three ways to run it every N hours
+
+1. *A terminal tab:* =parrafo watch= (uses =every=, or =--every 3h=).
+2. *Every new shell:* add =parrafo due= to =~/.bashrc=. It prints a paragraph
+   when you open a terminal, at most once per interval.
+3. *A systemd user timer* with =notify = true= (no terminal, so the paragraph
+   arrives as a notification). Not tested yet:
+   #+begin_src ini
+   # ~/.config/systemd/user/parrafo.service
+   [Service]
+   ExecStart=/path/to/spanish/parrafo-run next --reveal instant
+   # ~/.config/systemd/user/parrafo.timer
+   [Timer]
+   OnCalendar=hourly
+   [Install]
+   WantedBy=timers.target
+   #+end_src
+   then =systemctl --user enable --now parrafo.timer=.
+
+* Where the paragraphs come from
+
+| source                                                         | topics           | paragraphs | translation                                   | licence      |
+|----------------------------------------------------------------+------------------+------------+-----------------------------------------------+--------------|
+| Gracián, /Oráculo manual/ (1647), es.wikisource                | philosophy       |        299 | Joseph Jacobs (1892), Internet Archive scan   | public domain |
+| Wikipedia Content Translation dump (es→en), dumps.wikimedia.org | all others       |    ~14,600 | Wikipedia editors (human-edited)              | CC BY-SA 4.0 |
+
+- Gracián's 300 aphorisms are numbered in both versions, so they align
+  exactly (no. 52 is skipped: its heading is unreadable in the scan). The
+  English comes from OCR and still has occasional typos.
+- From Wikipedia we keep only prose paragraphs whose English was written or
+  clearly revised by a person (compared against the machine draft). Topics
+  come from the English article's categories, falling back to Spanish
+  keywords, so a few articles land in the wrong topic.
+- Set =PARRAFO_CONTACT= (e.g. your email) when building, to identify yourself
+  to Wikimedia's API as their policy asks.
+
+* Development
+
+#+begin_src sh
+nix-shell --run "PYTHONPATH=. python -m pytest -q"
+#+end_src
